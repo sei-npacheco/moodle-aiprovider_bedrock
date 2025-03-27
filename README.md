@@ -1,5 +1,5 @@
 # Amazon Bedrock API Provider
-The Amazon Bedrock API Provider is the [Amazon Bedrock](https://aws.amazon.com/bedrock/) Moodle [AI subsystem](https://docs.moodle.org/405/en/AI_subsystem) provider, thus enabling the usage of Amazon Bedrock API on AWS and leverage the multiple AI models it offers, including Anthropic [Claude](https://www.anthropic.com/claude).
+The Amazon Bedrock API Provider is the [Amazon Bedrock](https://aws.amazon.com/bedrock/) Moodle [AI subsystem](https://docs.moodle.org/405/en/AI_subsystem) provider, thus enabling the usage of Amazon Bedrock API on AWS and leveraging the multiple AI models it offers, including Anthropic [Claude](https://www.anthropic.com/claude).
 
 by [Meeple](https://www.meeplesrl.it/)
 
