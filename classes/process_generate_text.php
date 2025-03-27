@@ -24,10 +24,20 @@ namespace aiprovider_bedrock;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class process_generate_text extends abstract_processor {
+    /**
+     * Get model ID from settings.
+     *
+     * @return string Amazon Bedrock model ID
+     */
     protected function get_model(): string {
         return get_config('aiprovider_bedrock', 'action_generate_text_model');
     }
 
+    /**
+     * Get system instructions from settings.
+     *
+     * @return string Model system instructions prompt
+     */
     protected function get_system_instruction(): string {
         return get_config('aiprovider_bedrock', 'action_generate_text_systeminstruction');
     }
@@ -51,13 +61,13 @@ class process_generate_text extends abstract_processor {
     private function create_claude_request(string $userid): array {
         $systeminstruction = $this->get_system_instruction();
         $prompttext = $this->action->get_configuration('prompttext');
-        
-        // Make sure prompt is not empty
+
+        // Make sure prompt is not empty.
         if (empty($prompttext)) {
             $prompttext = "Please generate text based on this prompt.";
         }
-        
-        // Create the base request structure
+
+        // Create the base request structure.
         $params = [
             'anthropic_version' => 'bedrock-2023-05-31',
             'max_tokens' => 1024,
@@ -66,35 +76,35 @@ class process_generate_text extends abstract_processor {
                 [
                     'role' => 'user',
                     'content' => $prompttext,
-                ]
+                ],
             ],
         ];
-        
-        // Add system instruction if available
+
+        // Add system instruction if available.
         if (!empty($systeminstruction)) {
             $params['system'] = $systeminstruction;
         }
-        
-        // Handle Claude 3.5 and newer models which might require specific formatting
+
+        // Handle Claude 3.5 and newer models which might require specific formatting.
         $model = $this->get_model();
-        if (strpos($model, 'anthropic.claude-3-5') === 0 || 
+        if (strpos($model, 'anthropic.claude-3-5') === 0 ||
             strpos($model, 'anthropic.claude-3-opus') === 0 ||
             strpos($model, 'anthropic.claude-3-sonnet') === 0) {
-            
-            // For newer Claude models, ensure content is properly formatted
+
+            // For newer Claude models, ensure content is properly formatted.
             $params['messages'] = [
                 [
                     'role' => 'user',
                     'content' => [
                         [
                             'type' => 'text',
-                            'text' => $prompttext
-                        ]
-                    ]
-                ]
+                            'text' => $prompttext,
+                        ],
+                    ],
+                ],
             ];
         }
-        
+
         return $params;
     }
 
@@ -108,30 +118,36 @@ class process_generate_text extends abstract_processor {
         $model = $this->get_model();
         $prompttext = $this->action->get_configuration('prompttext');
         $systeminstruction = $this->get_system_instruction();
-        
-        // Default parameters structure that works with most models
+
+        // Default parameters structure that works with most models.
         $params = [
             'prompt' => $prompttext,
             'max_tokens' => 1024,
             'temperature' => 0.7,
         ];
-        
+
         if (!empty($systeminstruction)) {
             if (strpos($model, 'meta.llama') === 0) {
-                // For Llama models
+                // For Llama models.
                 $params['system'] = $systeminstruction;
             } else if (strpos($model, 'amazon.titan') === 0) {
-                // For Titan models
+                // For Titan models.
                 $params['systemPrompt'] = $systeminstruction;
             } else {
-                // Generic approach for other models
+                // Generic approach for other models.
                 $params['system_prompt'] = $systeminstruction;
             }
         }
-        
+
         return $params;
     }
 
+    /**
+     * Create request parameters.
+     *
+     * @param string $userid The user ID.
+     * @return array The request parameters.
+     */
     protected function create_request_params(string $userid): array {
         if ($this->is_claude_model()) {
             return $this->create_claude_request($userid);
@@ -147,20 +163,20 @@ class process_generate_text extends abstract_processor {
      * @return array The processed response.
      */
     private function handle_claude_success(array $response): array {
-        // Map Claude's stop reasons to standard format
-        $stopReason = $response['stop_reason'] ?? 'stop';
-        if ($stopReason === 'end_turn') {
-            $stopReason = 'stop';
-        } else if ($stopReason === 'max_tokens') {
-            $stopReason = 'length';
+        // Map Claude's stop reasons to standard format.
+        $stopreason = $response['stop_reason'] ?? 'stop';
+        if ($stopreason === 'end_turn') {
+            $stopreason = 'stop';
+        } else if ($stopreason === 'max_tokens') {
+            $stopreason = 'length';
         }
-        
+
         return [
             'success' => true,
             'id' => $response['id'] ?? uniqid('bedrock_'),
-            'fingerprint' => $stopReason,
+            'fingerprint' => $stopreason,
             'generatedcontent' => $response['content'][0]['text'] ?? '',
-            'finishreason' => $stopReason,
+            'finishreason' => $stopreason,
             'prompttokens' => $response['usage']['input_tokens'] ?? 0,
             'completiontokens' => $response['usage']['output_tokens'] ?? 0,
         ];
@@ -173,7 +189,7 @@ class process_generate_text extends abstract_processor {
      * @return array The processed response.
      */
     private function handle_other_model_success(array $response): array {
-        // Extract content based on model
+        // Extract content based on model.
         $content = '';
         if (isset($response['generation'])) {
             $content = $response['generation'];
@@ -186,31 +202,37 @@ class process_generate_text extends abstract_processor {
         } else if (isset($response['completion'])) {
             $content = $response['completion'];
         } else {
-            // Try to find content in the response
+            // Try to find content in the response.
             $content = json_encode($response);
         }
-        
-        // Standardize finish reason to values Moodle expects
-        $finishReason = $response['finish_reason'] ?? $response['stopReason'] ?? 'stop';
-        
-        // Map various stop/finish reasons to standardized values
-        if (in_array($finishReason, ['end_turn', 'stop_sequence', 'complete', 'finished'])) {
-            $finishReason = 'stop';
-        } else if (in_array($finishReason, ['max_tokens', 'token_limit', 'length_exceeded'])) {
-            $finishReason = 'length';
+
+        // Standardize finish reason to values Moodle expects.
+        $finishreason = $response['finish_reason'] ?? $response['stopReason'] ?? 'stop';
+
+        // Map various stop/finish reasons to standardized values.
+        if (in_array($finishreason, ['end_turn', 'stop_sequence', 'complete', 'finished'])) {
+            $finishreason = 'stop';
+        } else if (in_array($finishreason, ['max_tokens', 'token_limit', 'length_exceeded'])) {
+            $finishreason = 'length';
         }
-        
+
         return [
             'success' => true,
             'id' => $response['id'] ?? uniqid('bedrock_'),
             'fingerprint' => $response['model'] ?? $this->get_model(),
             'generatedcontent' => $content,
-            'finishreason' => $finishReason,
+            'finishreason' => $finishreason,
             'prompttokens' => $response['usage']['prompt_tokens'] ?? $response['usage']['inputTokens'] ?? 0,
             'completiontokens' => $response['usage']['completion_tokens'] ?? $response['usage']['outputTokens'] ?? 0,
         ];
     }
 
+    /**
+     * Handle API success
+     *
+     * @param array $response API Response
+     * @return array Text generation response
+     */
     protected function handle_api_success(array $response): array {
         if ($this->is_claude_model()) {
             return $this->handle_claude_success($response);

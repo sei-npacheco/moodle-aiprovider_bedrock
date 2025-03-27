@@ -57,11 +57,11 @@ class provider extends \core_ai\provider {
         $this->accesskeyid = get_config('aiprovider_bedrock', 'accesskeyid');
         $this->secretaccesskey = get_config('aiprovider_bedrock', 'secretaccesskey');
         $this->region = get_config('aiprovider_bedrock', 'region');
-        
+
         // Get global rate limit from config.
         $this->enableglobalratelimit = get_config('aiprovider_bedrock', 'enableglobalratelimit');
         $this->globalratelimit = get_config('aiprovider_bedrock', 'globalratelimit');
-        
+
         // Get user rate limit from config.
         $this->enableuserratelimit = get_config('aiprovider_bedrock', 'enableuserratelimit');
         $this->userratelimit = get_config('aiprovider_bedrock', 'userratelimit');
@@ -107,6 +107,12 @@ class provider extends \core_ai\provider {
         return $request;
     }
 
+    /**
+     * Check if the request is allowed.
+     *
+     * @param aiactions\base $action The action to check.
+     * @return array|bool True if the request is allowed, false otherwise.
+     */
     public function is_request_allowed(aiactions\base $action): array|bool {
         $ratelimiter = \core\di::get(rate_limiter::class);
         $component = \core\component::get_component_from_classname(get_class($this));
@@ -169,7 +175,7 @@ class provider extends \core_ai\provider {
                 'anthropic.claude-3-sonnet-20240229-v1:0',
                 PARAM_TEXT,
             );
-            
+
             // Add system instruction settings.
             $settings[] = new \admin_setting_configtextarea(
                 "aiprovider_bedrock/action_{$actionname}_systeminstruction",

@@ -24,6 +24,11 @@ namespace aiprovider_bedrock;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class process_generate_image extends abstract_processor {
+    /**
+     * Get the model ID from settings.
+     *
+     * @return string The model ID (amazon.nova-canvas-v1:0, stability.stable-diffusion-xl-v1)
+     */
     protected function get_model(): string {
         return get_config('aiprovider_bedrock', 'action_generate_image_model');
     }
@@ -38,7 +43,7 @@ class process_generate_image extends abstract_processor {
         if (strpos($model, 'stability') === 0) {
             return 'stability';
         } else if (strpos($model, 'amazon') === 0 || strpos($model, 'nova') !== false) {
-            return 'amazon';  // Nova Canvas is an Amazon model
+            return 'amazon';  // Nova Canvas is an Amazon model.
         }
         return 'generic';
     }
@@ -53,13 +58,13 @@ class process_generate_image extends abstract_processor {
         $prompttext = $this->action->get_configuration('prompttext');
         $width = (int) $this->action->get_configuration('width');
         $height = (int) $this->action->get_configuration('height');
-        
+
         return [
             'text_prompts' => [
                 [
                     'text' => $prompttext,
                     'weight' => 1.0,
-                ]
+                ],
             ],
             'cfg_scale' => 7.0,
             'steps' => 30,
@@ -78,16 +83,16 @@ class process_generate_image extends abstract_processor {
         $prompttext = $this->action->get_configuration('prompttext');
         $width = (int) $this->action->get_configuration('width');
         $height = (int) $this->action->get_configuration('height');
-        
-        // Check if this is the Nova Canvas model which requires negativeText
+
+        // Check if this is the Nova Canvas model which requires negativeText.
         $model = $this->get_model();
-        $isNova = strpos($model, 'nova') !== false;
-        
+        $isnova = strpos($model, 'nova') !== false;
+
         return [
             'taskType' => 'TEXT_IMAGE',
             'textToImageParams' => [
                 'text' => $prompttext,
-                'negativeText' => $isNova ? 'blurry, bad quality, distorted' : '', // Default negative prompt for Nova models
+                'negativeText' => $isnova ? 'blurry, bad quality, distorted' : '', // Default negative prompt for Nova models.
             ],
             'imageGenerationConfig' => [
                 'numberOfImages' => 1,
@@ -98,19 +103,25 @@ class process_generate_image extends abstract_processor {
         ];
     }
 
+    /**
+     * Create request parameters.
+     *
+     * @param string $userid The user ID.
+     * @return array The request parameters.
+     */
     protected function create_request_params(string $userid): array {
         $provider = $this->get_model_provider();
-        
+
         if ($provider === 'stability') {
             return $this->create_stability_request($userid);
         } else if ($provider === 'amazon') {
             return $this->create_amazon_request($userid);
         } else {
-            // Generic fallback
+            // Generic fallback.
             $prompttext = $this->action->get_configuration('prompttext');
             $width = (int) $this->action->get_configuration('width');
             $height = (int) $this->action->get_configuration('height');
-            
+
             return [
                 'prompt' => $prompttext,
                 'width' => $width > 0 ? $width : 1024,
@@ -129,7 +140,7 @@ class process_generate_image extends abstract_processor {
         if (!empty($response['artifacts'][0]['base64'])) {
             return $response['artifacts'][0]['base64'];
         }
-        
+
         throw new \RuntimeException('No image data found in the response');
     }
 
@@ -140,28 +151,28 @@ class process_generate_image extends abstract_processor {
      * @return string The base64 encoded image data.
      */
     private function extract_amazon_image_data(array $response): string {
-        // Standard Titan format
+        // Standard Titan format.
         if (!empty($response['images'][0])) {
             return $response['images'][0];
         }
-        
-        // Nova Canvas format may be different
+
+        // Nova Canvas format may be different.
         if (!empty($response['image'])) {
             return $response['image'];
         }
-        
-        // For Nova Canvas response
+
+        // For Nova Canvas response.
         if (!empty($response['output']) && !empty($response['output']['images'][0])) {
             return $response['output']['images'][0];
         }
-        
-        // Try to debug the response structure
-        $debugResponse = json_encode($response);
-        if (strlen($debugResponse) > 1000) {
-            $debugResponse = substr($debugResponse, 0, 1000) . '...';
+
+        // Try to debug the response structure.
+        $debugresponse = json_encode($response);
+        if (strlen($debugresponse) > 1000) {
+            $debugresponse = substr($debugresponse, 0, 1000) . '...';
         }
-        
-        throw new \RuntimeException("No image data found in the response. Received: " . $debugResponse);
+
+        throw new \RuntimeException("No image data found in the response. Received: " . $debugresponse);
     }
 
     /**
@@ -181,7 +192,7 @@ class process_generate_image extends abstract_processor {
         } else if (!empty($response['result'])) {
             return $response['result'];
         }
-        
+
         throw new \RuntimeException('No image data found in the response');
     }
 
@@ -193,31 +204,37 @@ class process_generate_image extends abstract_processor {
      */
     private function base64_to_temp_file(string $base64data): string {
         global $CFG;
-        
-        // Create the temporary file
+
+        // Create the temporary file.
         $tempfolder = make_temp_directory('ai/bedrock/images');
         $tempfilepath = $tempfolder . '/' . uniqid('bedrock_', true) . '.png';
-        
+
         // Determine if the base64 string includes the data:image prefix
-        // and remove it if present
+        // and remove it if present.
         if (strpos($base64data, 'data:image') === 0) {
             $base64data = substr($base64data, strpos($base64data, ',') + 1);
         }
-        
-        // Decode the base64 data and write to the temp file
+
+        // Decode the base64 data and write to the temp file.
         $imagedata = base64_decode($base64data);
         file_put_contents($tempfilepath, $imagedata);
-        
+
         return $tempfilepath;
     }
-    
+
+    /**
+     * Handle API success and process the image
+     *
+     * @param array $response API Response
+     * @return array Image generation response
+     */
     protected function handle_api_success(array $response): array {
         global $USER;
-        
+
         try {
             $provider = $this->get_model_provider();
-            
-            // Extract the base64 image data from the response
+
+            // Extract the base64 image data from the response.
             if ($provider === 'stability') {
                 $base64data = $this->extract_stability_image_data($response);
             } else if ($provider === 'amazon') {
@@ -225,16 +242,16 @@ class process_generate_image extends abstract_processor {
             } else {
                 $base64data = $this->extract_generic_image_data($response);
             }
-            
-            // Convert base64 data to a temporary file
+
+            // Convert base64 data to a temporary file.
             $tempfilepath = $this->base64_to_temp_file($base64data);
-            
-            // Process the image with ai_image (add watermark)
+
+            // Process the image with ai_image (add watermark).
             $aiimage = new \core_ai\ai_image($tempfilepath);
             $aiimage->add_watermark();
             $aiimage->save();
-            
-            // Create a stored file in the user's draft area
+
+            // Create a stored file in the user's draft area.
             $context = \context_user::instance($USER->id);
             $fs = get_file_storage();
             $filerecord = [
@@ -246,18 +263,18 @@ class process_generate_image extends abstract_processor {
                 'filename'  => 'bedrock_generated_image_' . time() . '.png',
                 'mimetype'  => 'image/png',
             ];
-            
-            // Create the stored file from the temporary file
+
+            // Create the stored file from the temporary file.
             $storedfile = $fs->create_file_from_pathname($filerecord, $tempfilepath);
-            
-            // Clean up the temporary file
+
+            // Clean up the temporary file.
             @unlink($tempfilepath);
-            
+
             return [
                 'success' => true,
-                'draftfile' => $storedfile, // The key must be 'draftfile', not 'image'
+                'draftfile' => $storedfile, // The key must be 'draftfile', not 'image'.
                 'id' => $response['id'] ?? uniqid('bedrock_img_'),
-                'prompttokens' => 0, // Not typically provided by image models
+                'prompttokens' => 0, // Not typically provided by image models.
             ];
         } catch (\Exception $e) {
             return [

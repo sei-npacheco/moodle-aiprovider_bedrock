@@ -41,7 +41,7 @@ abstract class abstract_processor extends process_base {
         $region = get_config('aiprovider_bedrock', 'region');
         $accesskey = get_config('aiprovider_bedrock', 'accesskeyid');
         $secretkey = get_config('aiprovider_bedrock', 'secretaccesskey');
-        
+
         return new BedrockRuntimeClient([
             'version' => 'latest',
             'region' => $region,
@@ -97,17 +97,17 @@ abstract class abstract_processor extends process_base {
             $client = $this->get_bedrock_client();
             $model = $this->get_model();
             $params = $this->create_request_params($userid);
-            
+
             $result = $client->invokeModel([
                 'modelId' => $model,
                 'body' => json_encode($params),
                 'contentType' => 'application/json',
                 'accept' => 'application/json',
             ]);
-            
+
             $response = json_decode($result->get('body')->getContents(), true);
             return $this->handle_api_success($response);
-            
+
         } catch (\Exception $e) {
             return [
                 'success' => false,

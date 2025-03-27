@@ -56,7 +56,7 @@ if ($hassiteconfig) {
         new lang_string('secretaccesskey_desc', 'aiprovider_bedrock'),
         '',
     ));
-    
+
     // Setting to store AWS region.
     $settings->add(new admin_setting_configtext(
         'aiprovider_bedrock/region',
