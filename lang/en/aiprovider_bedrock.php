@@ -22,6 +22,8 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+$string['accesskeyid'] = 'AWS Access Key ID';
+$string['accesskeyid_desc'] = 'The AWS Access Key ID used to authenticate with Amazon Bedrock.';
 $string['action:generate_image:model'] = 'AI model';
 $string['action:generate_image:model_desc'] = 'The model used to generate images from user prompts.';
 $string['action:generate_text:model'] = 'AI model';
@@ -32,12 +34,6 @@ $string['action:summarise_text:model'] = 'AI model';
 $string['action:summarise_text:model_desc'] = 'The model used to summarise the provided text.';
 $string['action:summarise_text:systeminstruction'] = 'System instruction';
 $string['action:summarise_text:systeminstruction_desc'] = 'This instruction is sent to the AI model along with the user\'s prompt. Editing this instruction is not recommended unless absolutely required.';
-$string['accesskeyid'] = 'AWS Access Key ID';
-$string['accesskeyid_desc'] = 'The AWS Access Key ID used to authenticate with Amazon Bedrock.';
-$string['secretaccesskey'] = 'AWS Secret Access Key';
-$string['secretaccesskey_desc'] = 'The AWS Secret Access Key used to authenticate with Amazon Bedrock.';
-$string['region'] = 'AWS Region';
-$string['region_desc'] = 'The AWS Region where Amazon Bedrock service is available (e.g., us-east-1, us-west-2).';
 $string['enableglobalratelimit'] = 'Set site-wide rate limit';
 $string['enableglobalratelimit_desc'] = 'Limit the number of requests that the Amazon Bedrock API provider can receive across the entire site every hour.';
 $string['enableuserratelimit'] = 'Set user rate limit';
@@ -51,5 +47,9 @@ $string['privacy:metadata:aiprovider_bedrock:model'] = 'The model used to genera
 $string['privacy:metadata:aiprovider_bedrock:numberimages'] = 'When generating images the number of images used in the response.';
 $string['privacy:metadata:aiprovider_bedrock:prompttext'] = 'The user entered text prompt used to generate the response.';
 $string['privacy:metadata:aiprovider_bedrock:responseformat'] = 'When generating images the format of the response.';
+$string['region'] = 'AWS Region';
+$string['region_desc'] = 'The AWS Region where Amazon Bedrock service is available (e.g., us-east-1, us-west-2).';
+$string['secretaccesskey'] = 'AWS Secret Access Key';
+$string['secretaccesskey_desc'] = 'The AWS Secret Access Key used to authenticate with Amazon Bedrock.';
 $string['userratelimit'] = 'Maximum number of requests per user';
 $string['userratelimit_desc'] = 'The number of requests allowed per hour, per user.';
