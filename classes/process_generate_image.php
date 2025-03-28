@@ -141,7 +141,7 @@ class process_generate_image extends abstract_processor {
             return $response['artifacts'][0]['base64'];
         }
 
-        throw new \RuntimeException('No image data found in the response');
+        throw new \RuntimeException(get_string('error:noimagedata', 'aiprovider_bedrock'));
     }
 
     /**
@@ -172,7 +172,7 @@ class process_generate_image extends abstract_processor {
             $debugresponse = substr($debugresponse, 0, 1000) . '...';
         }
 
-        throw new \RuntimeException("No image data found in the response. Received: " . $debugresponse);
+        throw new \RuntimeException(get_string('error:noimagedata', 'aiprovider_bedrock') . " Received: " . $debugresponse);
     }
 
     /**
@@ -193,7 +193,7 @@ class process_generate_image extends abstract_processor {
             return $response['result'];
         }
 
-        throw new \RuntimeException('No image data found in the response');
+        throw new \RuntimeException(get_string('error:noimagedata', 'aiprovider_bedrock'));
     }
 
     /**
@@ -280,7 +280,7 @@ class process_generate_image extends abstract_processor {
             return [
                 'success' => false,
                 'errorcode' => 500,
-                'errormessage' => 'Failed to process image: ' . $e->getMessage(),
+                'errormessage' => get_string('error:failedprocessimage', 'aiprovider_bedrock', $e->getMessage()),
             ];
         }
     }

@@ -127,7 +127,7 @@ abstract class abstract_processor extends process_base {
         return [
             'success' => false,
             'errorcode' => $errorinfo['code'] ?? 500,
-            'errormessage' => $errorinfo['message'] ?? 'Unknown error',
+            'errormessage' => $errorinfo['message'] ?? get_string('error:unknownerror', 'aiprovider_bedrock'),
         ];
     }
 }
