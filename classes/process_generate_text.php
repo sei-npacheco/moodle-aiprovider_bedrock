@@ -49,7 +49,8 @@ class process_generate_text extends abstract_processor {
      */
     private function is_claude_model(): bool {
         $model = $this->get_model();
-        return strpos($model, 'anthropic.claude') === 0;
+        return strpos($model, 'anthropic.claude') !== false || 
+               strpos($model, '.anthropic.claude') !== false;
     }
 
     /**
@@ -87,9 +88,14 @@ class process_generate_text extends abstract_processor {
 
         // Handle Claude 3.5 and newer models which might require specific formatting.
         $model = $this->get_model();
-        if (strpos($model, 'anthropic.claude-3-5') === 0 ||
-            strpos($model, 'anthropic.claude-3-opus') === 0 ||
-            strpos($model, 'anthropic.claude-3-sonnet') === 0) {
+        if (strpos($model, 'anthropic.claude-3-7') !== false ||
+            strpos($model, '.anthropic.claude-3-7') !== false ||
+            strpos($model, 'anthropic.claude-3-5') !== false ||
+            strpos($model, '.anthropic.claude-3-5') !== false ||
+            strpos($model, 'anthropic.claude-3-opus') !== false ||
+            strpos($model, '.anthropic.claude-3-opus') !== false ||
+            strpos($model, 'anthropic.claude-3-sonnet') !== false ||
+            strpos($model, '.anthropic.claude-3-sonnet') !== false) {
 
             // For newer Claude models, ensure content is properly formatted.
             $params['messages'] = [

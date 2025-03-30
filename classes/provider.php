@@ -172,7 +172,7 @@ class provider extends \core_ai\provider {
                 "aiprovider_bedrock/action_{$actionname}_model",
                 new \lang_string("action:{$actionname}:model", 'aiprovider_bedrock'),
                 new \lang_string("action:{$actionname}:model_desc", 'aiprovider_bedrock'),
-                'anthropic.claude-3-sonnet-20240229-v1:0',
+                'anthropic.claude-3-5-sonnet-20240620-v1:0',
                 PARAM_TEXT,
             );
 
@@ -190,7 +190,7 @@ class provider extends \core_ai\provider {
                 "aiprovider_bedrock/action_{$actionname}_model",
                 new \lang_string("action:{$actionname}:model", 'aiprovider_bedrock'),
                 new \lang_string("action:{$actionname}:model_desc", 'aiprovider_bedrock'),
-                'stability.stable-diffusion-xl-v1',
+                'amazon.nova-canvas-v1:0',
                 PARAM_TEXT,
             );
         }
