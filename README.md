@@ -18,7 +18,7 @@ You need to provide the AWS region and the [models](https://docs.aws.amazon.com/
 
 ## Tested models with version 1.0.0
 
-Amazon Bedrock (Foundation models)[https://docs.aws.amazon.com/bedrock/latest/userguide/models-regions.html] need to be enabled from Bedrock console.
+Amazon Bedrock [Foundation models](https://docs.aws.amazon.com/bedrock/latest/userguide/models-regions.html) need to be enabled from Bedrock console.
 
 We tested US and EU regions that provide models in Amazon Bedrock:
 - us-east-1
