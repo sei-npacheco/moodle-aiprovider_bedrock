@@ -49,7 +49,7 @@ class process_summarise_text extends abstract_processor {
      */
     private function is_claude_model(): bool {
         $model = $this->get_model();
-        return strpos($model, 'anthropic.claude') !== false || 
+        return strpos($model, 'anthropic.claude') !== false ||
                strpos($model, '.anthropic.claude') !== false;
     }
 
