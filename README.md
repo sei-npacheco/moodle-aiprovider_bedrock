@@ -14,7 +14,8 @@ You must provide an AWS Access Key and Secret Access Key for an AWS user with th
 
 You need to provide the AWS region and the [models](https://docs.aws.amazon.com/bedrock/latest/userguide/models-supported.html) to use for every specific Action.
 
-![ai_bedrock_settings](https://github.com/user-attachments/assets/6c82c210-9b34-4998-ae48-b427848c5e8f)
+![main settings](https://github.com/user-attachments/assets/7de1082f-ad7d-405f-a4c7-da30d206b1fe)
+
 
 ## Tested models with version 1.0.0
 
