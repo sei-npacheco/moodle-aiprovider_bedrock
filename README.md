@@ -3,16 +3,45 @@ The Amazon Bedrock API Provider is the [Amazon Bedrock](https://aws.amazon.com/b
 
 by [Meeple](https://www.meeplesrl.it/)
 
+**Please note**: you do need a paid subscription with AWS in order to connect this service with Moodle.
+
 ## Installation
 
-To install this AI provider you can download the ZIP file and install from Administration > Site administration > Plugins > Install plugins, or you can unzip it in the ai/provider folder.
+To install this AI provider you can download the ZIP file and install from *Administration > Site administration > Plugins > Install plugins*, or you can unzip it in the `ai/provider` folder.
 This provider requires Moodle LMS 4.5, the first version to include the AI subsystem.
 
-You must provide an AWS Access Key and Secret Access Key for an AWS user/role with the right permissions to use Amazon Bedrock in your AWS account.
+You must provide an AWS Access Key and Secret Access Key for an AWS user with the right permissions to use Amazon Bedrock in your AWS account. Please remind to enable the models from *Bedrock configurations > Model access* in the selected region.
 
-You need to provide the AWS region and the [models](https://docs.aws.amazon.com/bedrock/latest/userguide/models-regions.html) to use for every specific Action.
+You need to provide the AWS region and the [models](https://docs.aws.amazon.com/bedrock/latest/userguide/models-supported.html) to use for every specific Action.
 
 ![ai_bedrock_settings](https://github.com/user-attachments/assets/6c82c210-9b34-4998-ae48-b427848c5e8f)
+
+## Tested models with version 1.0.0
+
+Amazon Bedrock (Foundation models)[https://docs.aws.amazon.com/bedrock/latest/userguide/models-regions.html] need to be enabled from Bedrock console.
+
+We tested US and EU regions that provide models in Amazon Bedrock:
+- us-east-1
+    - us.anthropic.claude-3-7-sonnet-20250219-v1:0
+    - us.anthropic.claude-3-5-sonnet-20241022-v2:0
+    - us.anthropic.claude-3-5-haiku-20241022-v1:0
+    - anthropic.claude-3-haiku-20240307-v1:0
+    - amazon.nova-canvas-v1:0 (Image)
+- us-west-2
+    - us.anthropic.claude-3-7-sonnet-20250219-v1:0
+    - anthropic.claude-3-5-haiku-20241022-v1:0
+- eu-west-1
+    - eu.anthropic.claude-3-7-sonnet-20250219-v1:0
+    - eu.anthropic.claude-3-5-sonnet-20240620-v1:0
+    - amazon.nova-canvas-v1:0 (Image)
+- eu-central-1
+    - eu.anthropic.claude-3-7-sonnet-20250219-v1:0
+    - anthropic.claude-3-5-sonnet-20240620-v1:0
+- eu-west-3
+    - eu.anthropic.claude-3-7-sonnet-20250219-v1:0
+    - eu.anthropic.claude-3-5-sonnet-20240620-v1:0
+
+**Note**: models starting with *us.* or *eu.* use a cross-region inference to increase throughput and improve resiliency by routing the model's requests across multiple AWS Regions during peak utilization bursts. In particular, with respect to GDPR compliance, *eu.* cross-region inference routes requests to European regions.
 
 ## License
 
