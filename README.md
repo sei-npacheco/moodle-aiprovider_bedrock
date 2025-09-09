@@ -5,6 +5,10 @@ by [Meeple](https://www.meeplesrl.it/)
 
 **Please note**: you do need a paid subscription with AWS in order to connect this service with Moodle.
 
+## Why Amazon Bedrock?
+
+Amazon Bedrock offers significant advantages for European universities seeking to leverage AI while maintaining strict GDPR compliance. While providers like OpenAI may offer EU data storage options, Bedrock provides a fundamentally different architecture where all data remains within the university's own AWS account and is never transmitted to foundation model providers such as Anthropic, Cohere, or others. This means that sensitive student and research data never leaves the institution's controlled environment, providing an additional layer of data sovereignty that goes beyond geographic storage requirements. Bedrock's enterprise-grade infrastructure offers granular control over data handling, built-in privacy safeguards, comprehensive audit trails, and the ability to implement data retention policies that align with GDPR's "right to be forgotten" requirements. For educational institutions handling sensitive personal data, this contained approach significantly simplifies GDPR compliance by eliminating third-party data sharing concerns entirely, while still providing access to state-of-the-art foundation models through AWS's secure, scalable infrastructure that universities can fully control and audit.
+
 ## Installation
 
 To install this AI provider you can download the ZIP file and install from *Administration > Site administration > Plugins > Install plugins*, or you can unzip it in the `ai/provider` folder.
@@ -16,30 +20,31 @@ You need to provide the AWS region and the [models](https://docs.aws.amazon.com/
 
 ![ai_bedrock_settings](https://github.com/user-attachments/assets/6c82c210-9b34-4998-ae48-b427848c5e8f)
 
-## Tested models with version 1.0.0
+## Tested models with version 1.1.0
 
 Amazon Bedrock [Foundation models](https://docs.aws.amazon.com/bedrock/latest/userguide/models-regions.html) need to be enabled from Bedrock console.
 
-We tested US and EU regions that provide models in Amazon Bedrock:
+We tested US and EU regions that provide models in Amazon Bedrock, including the latest Anthropic Claude Sonnet 4 and Amazon Nova Canvas:
 - us-east-1
+    - us.anthropic.claude-sonnet-4-20250514-v1:0
     - us.anthropic.claude-3-7-sonnet-20250219-v1:0
     - us.anthropic.claude-3-5-sonnet-20241022-v2:0
     - us.anthropic.claude-3-5-haiku-20241022-v1:0
-    - anthropic.claude-3-haiku-20240307-v1:0
     - amazon.nova-canvas-v1:0 (Image)
 - us-west-2
+    - us.anthropic.claude-sonnet-4-20250514-v1:0
     - us.anthropic.claude-3-7-sonnet-20250219-v1:0
     - anthropic.claude-3-5-haiku-20241022-v1:0
 - eu-west-1
+    - eu.anthropic.claude-sonnet-4-20250514-v1:0
     - eu.anthropic.claude-3-7-sonnet-20250219-v1:0
-    - eu.anthropic.claude-3-5-sonnet-20240620-v1:0
     - amazon.nova-canvas-v1:0 (Image)
 - eu-central-1
+    - eu.anthropic.claude-sonnet-4-20250514-v1:0
     - eu.anthropic.claude-3-7-sonnet-20250219-v1:0
-    - anthropic.claude-3-5-sonnet-20240620-v1:0
 - eu-west-3
+    - eu.anthropic.claude-sonnet-4-20250514-v1:0
     - eu.anthropic.claude-3-7-sonnet-20250219-v1:0
-    - eu.anthropic.claude-3-5-sonnet-20240620-v1:0
 
 **Note**: models starting with *us.* or *eu.* use a cross-region inference to increase throughput and improve resiliency by routing the model's requests across multiple AWS Regions during peak utilization bursts. In particular, with respect to GDPR compliance, *eu.* cross-region inference routes requests to European regions.
 

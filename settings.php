@@ -62,7 +62,7 @@ if ($hassiteconfig) {
         'aiprovider_bedrock/region',
         new lang_string('region', 'aiprovider_bedrock'),
         new lang_string('region_desc', 'aiprovider_bedrock'),
-        'us-east-1',
+        'eu-west-1',
         PARAM_TEXT,
     ));
 
