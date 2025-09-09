@@ -28,7 +28,6 @@ We tested US and EU regions that provide models in Amazon Bedrock, including the
 - us-east-1
     - us.anthropic.claude-sonnet-4-20250514-v1:0
     - us.anthropic.claude-3-7-sonnet-20250219-v1:0
-    - us.anthropic.claude-3-5-sonnet-20241022-v2:0
     - us.anthropic.claude-3-5-haiku-20241022-v1:0
     - amazon.nova-canvas-v1:0 (Image)
 - us-west-2
