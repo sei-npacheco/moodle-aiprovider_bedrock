@@ -1,133 +1,154 @@
 <?php
-// This file is part of Moodle - http://moodle.org/
-//
-// Moodle is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// Moodle is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
-
 namespace aiprovider_bedrock;
 
 use Aws\BedrockRuntime\BedrockRuntimeClient;
-use core\http_client;
-use core_ai\aiactions\responses\response_base;
+use Aws\Exception\AwsException;
 use core_ai\process_base;
-use GuzzleHttp\Exception\RequestException;
-use Psr\Http\Message\RequestInterface;
-use Psr\Http\Message\ResponseInterface;
 
 /**
- * Abstract class for Bedrock processors.
+ * Abstract class for Bedrock processors (instance-aware).
  *
  * @package    aiprovider_bedrock
- * @copyright  2025 Davide Ferro <dferro@meeplesrl.it>, Angelo Calò <acalo@meeplesrl.it>
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 abstract class abstract_processor extends process_base {
+
     /**
-     * Get the Bedrock client.
-     *
-     * @return BedrockRuntimeClient
+     * Build an AWS Bedrock client using instance (action) configuration,
+     * with safe fallbacks to legacy plugin config and env vars.
      */
     protected function get_bedrock_client(): BedrockRuntimeClient {
-        $region = get_config('aiprovider_bedrock', 'region');
-        $accesskey = get_config('aiprovider_bedrock', 'accesskeyid');
-        $secretkey = get_config('aiprovider_bedrock', 'secretaccesskey');
+        // Instance config (preferred).
+        $accesskey = $this->action->get_configuration('accesskeyid');
+        $secretkey = $this->action->get_configuration('secretaccesskey');
+        $session   = $this->action->get_configuration('sessiontoken'); // optional
+        $region    = $this->action->get_configuration('region');
 
-        return new BedrockRuntimeClient([
-            'version' => 'latest',
-            'region' => $region,
+        // Fallbacks (legacy globals or environment) to ease upgrades.
+        $accesskey ??= get_config('aiprovider_bedrock', 'accesskeyid') ?: getenv('AWS_ACCESS_KEY_ID');
+        $secretkey ??= get_config('aiprovider_bedrock', 'secretaccesskey') ?: getenv('AWS_SECRET_ACCESS_KEY');
+        $session   ??= get_config('aiprovider_bedrock', 'sessiontoken') ?: getenv('AWS_SESSION_TOKEN') ?: null;
+        $region    ??= get_config('aiprovider_bedrock', 'region') ?: getenv('AWS_REGION') ?: 'eu-west-1';
+
+        $config = [
+            'version'     => 'latest',
+            'region'      => $region,
             'credentials' => [
-                'key' => $accesskey,
+                'key'    => $accesskey,
                 'secret' => $secretkey,
             ],
-        ]);
+        ];
+
+        if (!empty($session)) {
+            $config['credentials']['token'] = $session;
+        }
+
+        return new BedrockRuntimeClient($config);
     }
 
     /**
-     * Get the name of the model to use.
-     *
-     * @return string
+     * Model ID to invoke (defaults to the text field from the action form).
+     * Override in concrete processors if you need a computed model id.
      */
-    abstract protected function get_model(): string;
+    protected function get_model(): string {
+        $model = (string) ($this->action->get_configuration('model') ?? '');
+        if ($model === '') {
+            // Guardrail: fail fast with a readable error.
+            throw new \coding_exception('Bedrock model is not configured for this action instance.');
+        }
+        return $model;
+    }
 
     /**
-     * Get the system instructions.
-     *
-     * @return string
+     * Optional system instruction (uses the action’s default if not set in instance).
      */
     protected function get_system_instruction(): string {
-        return $this->action::get_system_instruction();
+        return (string) ($this->action->get_configuration('systeminstruction')
+            ?? $this->action::get_system_instruction());
     }
 
     /**
-     * Create the request parameters to send to the Bedrock API.
-     *
-     * @param string $userid The user id.
-     * @return array The request parameters to send to the Bedrock API.
+     * If your processors want the extra JSON settings (temperature, top_p, etc.)
+     * this helper returns them as an assoc array.
      */
-    abstract protected function create_request_params(
-        string $userid,
-    ): array;
+    protected function get_extra_params(): array {
+        $raw = $this->action->get_configuration('modelextraparams') ?? '';
+        if (!is_string($raw) || $raw === '') {
+            return [];
+        }
+        $json = json_decode($raw, true);
+        return is_array($json) ? $json : [];
+    }
 
     /**
-     * Handle a successful response from the external AI api.
+     * Each concrete processor must create the provider-specific request body.
+     * Compose it using get_system_instruction(), get_extra_params(), and your inputs.
      *
-     * @param array $response The response from the Bedrock API.
-     * @return array The processed response.
+     * @param string $userid Privacy-safe hashed user id.
+     * @return array Request body that Bedrock model expects.
+     */
+    abstract protected function create_request_params(string $userid): array;
+
+    /**
+     * Convert a successful Bedrock response to Moodle’s standard action payload.
      */
     abstract protected function handle_api_success(array $response): array;
 
     /**
-     * Query the AI API using the Bedrock client.
-     *
-     * @return array The response from the API.
+     * Call Bedrock and return a uniform result array.
      */
     protected function query_ai_api(): array {
         try {
-            $userid = $this->provider->generate_userid($this->action->get_configuration('userid'));
-            $client = $this->get_bedrock_client();
-            $model = $this->get_model();
-            $params = $this->create_request_params($userid);
+            $userid  = $this->provider->generate_userid($this->action->get_configuration('userid'));
+            $client  = $this->get_bedrock_client();
+            $model   = $this->get_model();
+            $payload = $this->create_request_params($userid);
+
+            // Allow instance JSON to override/add knobs.
+            $extras  = $this->get_extra_params();
+            if ($extras) {
+                // Shallow merge; override payload keys with extras if present.
+                $payload = array_replace($payload, $extras);
+            }
 
             $result = $client->invokeModel([
-                'modelId' => $model,
-                'body' => json_encode($params),
+                'modelId'     => $model,
+                'body'        => json_encode($payload, JSON_UNESCAPED_SLASHES),
                 'contentType' => 'application/json',
-                'accept' => 'application/json',
+                'accept'      => 'application/json',
             ]);
 
-            $response = json_decode($result->get('body')->getContents(), true);
-            return $this->handle_api_success($response);
+            // Bedrock returns a stream body object.
+            $body = (string) $result->get('body');
+            $data = $body !== '' ? json_decode($body, true) : [];
+            if (!is_array($data)) {
+                throw new \runtime_exception('Invalid JSON received from Bedrock.');
+            }
 
-        } catch (\Exception $e) {
+            return $this->handle_api_success($data);
+
+        } catch (AwsException $e) {
             return [
-                'success' => false,
-                'errorcode' => $e->getCode() ?: 500,
+                'success'      => false,
+                'errorcode'    => (int) ($e->getStatusCode() ?: 500),
+                'errormessage' => $e->getAwsErrorMessage() ?: $e->getMessage(),
+            ];
+        } catch (\Throwable $e) {
+            return [
+                'success'      => false,
+                'errorcode'    => (int) ($e->getCode() ?: 500),
                 'errormessage' => $e->getMessage(),
             ];
         }
     }
 
     /**
-     * Handle an error from the external AI api.
-     *
-     * @param array $errorinfo The error information.
-     * @return array The error response.
+     * Standard error wrapper (kept for compatibility with callers).
      */
     protected function handle_api_error(array $errorinfo): array {
         return [
-            'success' => false,
-            'errorcode' => $errorinfo['code'] ?? 500,
-            'errormessage' => $errorinfo['message'] ?? get_string('error:unknownerror', 'aiprovider_bedrock'),
+            'success'      => false,
+            'errorcode'    => (int) ($errorinfo['code'] ?? 500),
+            'errormessage' => (string) ($errorinfo['message'] ?? get_string('error:unknownerror', 'aiprovider_bedrock')),
         ];
     }
 }
