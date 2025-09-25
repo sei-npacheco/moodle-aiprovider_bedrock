@@ -29,18 +29,52 @@ class process_generate_text extends abstract_processor {
      *
      * @return string Amazon Bedrock model ID
      */
+    // In process_generate_text.php
     protected function get_model(): string {
-        return get_config('aiprovider_bedrock', 'action_generate_text_model');
+        // 1) Provider instance action settings (where the form saves it)
+        $model = $this->provider->actionconfig[$this->action::class]['settings']['model'] ?? '';
+
+        // 2) Fallback: some call sites hand settings via the action object
+        if ($model === '') {
+            $model = (string)($this->action->get_configuration('model') ?? '');
+        }
+
+        // 3) Legacy site-wide fallback (if you still keep it)
+        if ($model === '') {
+            $model = (string)(get_config('aiprovider_bedrock', 'action_generate_text_model') ?: '');
+        }
+
+        // Final guard: fail early with a clear message
+        if ($model === '') {
+            throw new \moodle_exception('Missing Bedrock model. Please set the “Model” in the Generate text action settings.');
+        }
+
+        return $model;
     }
 
-    /**
-     * Get system instructions from settings.
-     *
-     * @return string Model system instructions prompt
-     */
     protected function get_system_instruction(): string {
-        return get_config('aiprovider_bedrock', 'action_generate_text_systeminstruction');
+        return (string)($this->action->get_configuration('systeminstruction')
+            ?? get_config('aiprovider_bedrock', 'action_generate_text_systeminstruction')
+            ?? $this->action::get_system_instruction());
     }
+
+    private function get_prompt(): string {
+        return (string)($this->action->get_configuration('prompttext')
+            ?? $this->action->get_configuration('prompt')
+            ?? '');
+    }
+
+    private function merge_extras(array $payload): array {
+        $raw = $this->action->get_configuration('modelextraparams') ?? '';
+        if (is_string($raw) && $raw !== '') {
+            $extras = json_decode($raw, true);
+            if (is_array($extras)) {
+                $payload = array_replace($payload, $extras); // shallow override
+            }
+        }
+        return $payload;
+    }
+
 
     /**
      * Determine if the selected model is from Anthropic (Claude).
@@ -48,10 +82,10 @@ class process_generate_text extends abstract_processor {
      * @return bool
      */
     private function is_claude_model(): bool {
-        $model = $this->get_model();
-        return strpos($model, 'anthropic.claude') !== false ||
-               strpos($model, '.anthropic.claude') !== false;
+        $m = $this->get_model();
+        return str_starts_with($m, 'anthropic.claude') || str_contains($m, '.anthropic.claude');
     }
+
 
     /**
      * Create the request parameters for Claude models.
@@ -61,14 +95,8 @@ class process_generate_text extends abstract_processor {
      */
     private function create_claude_request(string $userid): array {
         $systeminstruction = $this->get_system_instruction();
-        $prompttext = $this->action->get_configuration('prompttext');
+        $prompttext = $this->get_prompt() ?: 'Please generate text based on this prompt.';
 
-        // Make sure prompt is not empty.
-        if (empty($prompttext)) {
-            $prompttext = "Please generate text based on this prompt.";
-        }
-
-        // Create the base request structure.
         $params = [
             'anthropic_version' => 'bedrock-2023-05-31',
             'max_tokens' => 1024,
@@ -76,77 +104,41 @@ class process_generate_text extends abstract_processor {
             'messages' => [
                 [
                     'role' => 'user',
-                    'content' => $prompttext,
+                    'content' => [
+                        ['type' => 'text', 'text' => $prompttext],
+                    ],
                 ],
             ],
         ];
-
-        // Add system instruction if available.
-        if (!empty($systeminstruction)) {
+        if ($systeminstruction !== '') {
             $params['system'] = $systeminstruction;
         }
-
-        // Handle Claude 3.5 and newer models which might require specific formatting.
-        $model = $this->get_model();
-        if (strpos($model, 'anthropic.claude-3-7') !== false ||
-            strpos($model, '.anthropic.claude-3-7') !== false ||
-            strpos($model, 'anthropic.claude-3-5') !== false ||
-            strpos($model, '.anthropic.claude-3-5') !== false ||
-            strpos($model, 'anthropic.claude-3-opus') !== false ||
-            strpos($model, '.anthropic.claude-3-opus') !== false ||
-            strpos($model, 'anthropic.claude-3-sonnet') !== false ||
-            strpos($model, '.anthropic.claude-3-sonnet') !== false) {
-
-            // For newer Claude models, ensure content is properly formatted.
-            $params['messages'] = [
-                [
-                    'role' => 'user',
-                    'content' => [
-                        [
-                            'type' => 'text',
-                            'text' => $prompttext,
-                        ],
-                    ],
-                ],
-            ];
-        }
-
-        return $params;
+        return $this->merge_extras($params);
     }
 
-    /**
-     * Create the request parameters for non-Claude models (like Llama, Titan, etc.).
-     *
-     * @param string $userid The user id.
-     * @return array The request parameters.
-     */
     private function create_other_model_request(string $userid): array {
         $model = $this->get_model();
-        $prompttext = $this->action->get_configuration('prompttext');
+        $prompttext = $this->get_prompt();
         $systeminstruction = $this->get_system_instruction();
 
-        // Default parameters structure that works with most models.
         $params = [
             'prompt' => $prompttext,
             'max_tokens' => 1024,
             'temperature' => 0.7,
         ];
 
-        if (!empty($systeminstruction)) {
-            if (strpos($model, 'meta.llama') === 0) {
-                // For Llama models.
+        if ($systeminstruction !== '') {
+            if (str_starts_with($model, 'meta.llama')) {
                 $params['system'] = $systeminstruction;
-            } else if (strpos($model, 'amazon.titan') === 0) {
-                // For Titan models.
+            } else if (str_starts_with($model, 'amazon.titan')) {
                 $params['systemPrompt'] = $systeminstruction;
             } else {
-                // Generic approach for other models.
                 $params['system_prompt'] = $systeminstruction;
             }
         }
-
-        return $params;
+        return $this->merge_extras($params);
     }
+
 
     /**
      * Create request parameters.

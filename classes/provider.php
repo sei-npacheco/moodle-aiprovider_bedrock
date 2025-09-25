@@ -2,6 +2,7 @@
 namespace aiprovider_bedrock;
 
 use core_ai\form\action_settings_form;
+use core_ai\rate_limiter;
 use Psr\Http\Message\RequestInterface;
 
 class provider extends \core_ai\provider {
@@ -61,13 +62,64 @@ class provider extends \core_ai\provider {
 
     #[\Override]
     public function add_authentication_headers(RequestInterface $request): RequestInterface {
-        // Bedrock auth handled by AWS SDK you use in processors.
+        // Bedrock uses the AWS SDK; don’t add HTTP headers here.
         return $request;
     }
 
+    /**
+     * Optional but recommended: enforce per-instance rate limits.
+     */
+    #[\Override]
+    public function is_request_allowed(\core_ai\aiactions\base $action): array|bool {
+        /** @var rate_limiter $ratelimiter */
+        $ratelimiter = \core\di::get(rate_limiter::class);
+        $component   = \core\component::get_component_from_classname(static::class);
+
+        // Values saved on the instance (from your hook form).
+        $enableUser   = !empty($this->config['enableuserratelimit']);
+        $userLimit    = (int)($this->config['userratelimit'] ?? 0);
+        $enableGlobal = !empty($this->config['enableglobalratelimit']);
+        $globalLimit  = (int)($this->config['globalratelimit'] ?? 0);
+
+        if ($enableUser && $userLimit > 0) {
+            $ok = $ratelimiter->check_user_rate_limit(
+                component: $component,
+                ratelimit: $userLimit,
+                userid: $action->get_configuration('userid')
+            );
+            if (!$ok) {
+                return [
+                    'success'     => false,
+                    'errorcode'   => 429,
+                    'errormessage'=> get_string('error:userratelimitexceeded', 'aiprovider_bedrock'),
+                ];
+            }
+        }
+
+        if ($enableGlobal && $globalLimit > 0) {
+            $ok = $ratelimiter->check_global_rate_limit(
+                component: $component,
+                ratelimit: $globalLimit
+            );
+            if (!$ok) {
+                return [
+                    'success'     => false,
+                    'errorcode'   => 429,
+                    'errormessage'=> get_string('error:globalratelimitexceeded', 'aiprovider_bedrock'),
+                ];
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Mark the instance as configured only when creds + region are present.
+     */
     #[\Override]
     public function is_provider_configured(): bool {
-        // Instance config will be validated in processors; return true here.
-        return true;
+        return !empty($this->config['accesskeyid'])
+            && !empty($this->config['secretaccesskey'])
+            && !empty($this->config['region']);
     }
 }

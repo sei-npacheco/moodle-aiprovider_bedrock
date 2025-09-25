@@ -95,3 +95,21 @@ $string['extraparams'] = 'Extra model parameters (JSON)';
 $string['extraparams_help'] =
   'Optional JSON for provider-specific parameters (e.g. {"temperature":0.2,"top_p":0.9,"max_tokens":2048}).';
 $string['invalidjson'] = 'This is not valid JSON.';
+
+$string['accesskeyid_help'] =
+    'Your AWS Access Key ID used to authenticate requests to Amazon Bedrock.';
+$string['secretaccesskey_help'] =
+    'Your AWS Secret Access Key paired with the Access Key ID.';
+$string['sessiontoken_help'] =
+    'Optional temporary session token (STS) if you use temporary credentials.';
+$string['region_help'] =
+    'AWS region where you will call Bedrock (e.g. us-east-1, us-west-2, eu-west-1).';
+
+$string['enableglobalratelimit_help'] =
+    'When enabled, limits the total number of requests per hour across all users for this provider instance.';
+$string['globalratelimit_help'] =
+    'Maximum total requests per hour across all users for this provider instance.';
+$string['enableuserratelimit_help'] =
+    'When enabled, limits the number of requests per hour per user.';
+$string['userratelimit_help'] =
+    'Maximum requests per hour per user for this provider instance.';
