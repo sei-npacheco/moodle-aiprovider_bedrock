@@ -58,3 +58,40 @@ $string['secretaccesskey'] = 'AWS Secret Access Key';
 $string['secretaccesskey_desc'] = 'The AWS Secret Access Key used to authenticate with Amazon Bedrock.';
 $string['userratelimit'] = 'Maximum number of requests per user';
 $string['userratelimit_desc'] = 'The number of requests allowed per hour, per user.';
+// General.
+$string['pluginname'] = 'Amazon Bedrock';
+$string['settings_instance_note'] =
+  'From Moodle 5.0, credentials are configured per provider instance at Site administration → General → AI providers.';
+
+// Instance form.
+$string['accesskeyid'] = 'Access key ID';
+$string['accesskeyid_desc'] = 'AWS access key ID for this Bedrock instance.';
+$string['secretaccesskey'] = 'Secret access key';
+$string['secretaccesskey_desc'] = 'AWS secret access key for this Bedrock instance.';
+$string['sessiontoken'] = 'Session token';
+$string['sessiontoken_help'] = 'Optional session token for temporary credentials.';
+$string['region'] = 'Region';
+$string['region_desc'] = 'AWS region hosting Bedrock, e.g. eu-west-1.';
+
+// Actions: model + systeminstruction (we reuse same strings for 3 text actions).
+$string['action:generate_text:model'] = 'Model';
+$string['action:generate_text:model_help'] =
+  'Enter the exact Bedrock model ID (e.g. <code>anthropic.claude-3-5-sonnet-20240620-v1:0</code>).';
+$string['action:summarise_text:model'] = $string['action:generate_text:model'];
+$string['action:summarise_text:model_help'] = $string['action:generate_text:model_help'];
+$string['action:explain_text:model'] = $string['action:generate_text:model'];
+$string['action:explain_text:model_help'] = $string['action:generate_text:model_help'];
+
+$string['action:generate_text:systeminstruction'] = 'System instruction';
+$string['action:generate_text:systeminstruction_help'] =
+  'Optional instruction prepended to steer tone and style.';
+$string['action:summarise_text:systeminstruction'] = $string['action:generate_text:systeminstruction'];
+$string['action:summarise_text:systeminstruction_help'] = $string['action:generate_text:systeminstruction_help'];
+$string['action:explain_text:systeminstruction'] = $string['action:generate_text:systeminstruction'];
+$string['action:explain_text:systeminstruction_help'] = $string['action:generate_text:systeminstruction_help'];
+
+// Extra params (JSON).
+$string['extraparams'] = 'Extra model parameters (JSON)';
+$string['extraparams_help'] =
+  'Optional JSON for provider-specific parameters (e.g. {"temperature":0.2,"top_p":0.9,"max_tokens":2048}).';
+$string['invalidjson'] = 'This is not valid JSON.';
